@@ -5,6 +5,7 @@ from urllib.error import URLError
 
 from fastapi import FastAPI, HTTPException
 
+from backend.rainfall import process_rainfall
 
 app = FastAPI(
     title="Hamrah API",
@@ -52,5 +53,6 @@ def get_weather():
         "source": "Open-Meteo",
         "timezone": data.get("timezone"),
         "units": data.get("hourly_units"),
-        "hourly": data.get("hourly")
+        "hourly": data.get("hourly"),
+        "rainfall_analysis": process_rainfall(data["hourly"])
     }
