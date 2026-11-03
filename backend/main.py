@@ -7,6 +7,9 @@ from fastapi import FastAPI, HTTPException
 
 from backend.rainfall import process_rainfall
 
+from pydantic import BaseModel, Field
+from backend.risk_model import calculate_road_risk
+
 app = FastAPI(
     title="Hamrah API",
     description="Flood Risk Prediction and Smart Routing for Jeddah",
@@ -55,4 +58,31 @@ def get_weather():
         "units": data.get("hourly_units"),
         "hourly": data.get("hourly"),
         "rainfall_analysis": process_rainfall(data["hourly"])
+    }
+
+class RiskRequest(BaseModel):
+    road_id: str
+    rain_6h_mm: float = Field(ge=0)
+    slope_percent: float = Field(ge=0)
+    upstream_area_km2: float = Field(ge=0)
+    impervious_fraction: float = Field(ge=0, le=1)
+    is_tunnel: bool
+
+
+@app.post("/api/risk/preview")
+def preview_road_risk(request: RiskRequest):
+
+    result = calculate_road_risk(
+        rain_6h_mm=request.rain_6h_mm,
+        slope_percent=request.slope_percent,
+        upstream_area_km2=request.upstream_area_km2,
+        impervious_fraction=request.impervious_fraction,
+        is_tunnel=request.is_tunnel
+    )
+
+    return {
+        "road_id": request.road_id,
+        "risk_score": result["risk_score"],
+        "risk_level": result["risk_level"],
+        "mode": "prototype"
     }
